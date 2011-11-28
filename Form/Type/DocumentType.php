@@ -37,13 +37,10 @@ class DocumentType extends AbstractType
     public function buildForm(FormBuilder $builder, array $options)
     {
         if ($options['multiple']) {
-            $transformer = new DocumentsToArrayTransformer($options['choice_list']);
+            $builder->addEventSubscriber(new MergeCollectionListener())
+                ->prependClientTransformer(new DocumentsToArrayTransformer($options['choice_list']));
         } else {
-            $transformer = new DocumentToIdTransformer($options['choice_list']);
-        }
-
-        if ($this->prependClientTransformer($builder, $transformer) && $options['multiple']) {
-            $builder->addEventSubscriber(new MergeCollectionListener());
+            $builder->prependClientTransformer(new DocumentToIdTransformer($options['choice_list']));
         }
     }
 
@@ -84,31 +81,5 @@ class DocumentType extends AbstractType
     public function getName()
     {
         return 'document';
-    }
-
-    /**
-     * Checking for client transformer was added before. If so - returns false.
-     *
-     * @param \Symfony\Component\Form\FormBuilder $builder
-     * @param \Symfony\Component\Form\DataTransformerInterface $prependedTransformer
-     * @return bool
-     */
-    protected function prependClientTransformer(FormBuilder $builder, DataTransformerInterface $prependedTransformer)
-    {
-        $hasAlready = false;
-        $transformers = $builder->getClientTransformers();
-        foreach ($transformers as $transformer) {
-            if ($prependedTransformer == $transformer) {
-                $hasAlready = true;
-            }
-        }
-
-        if (!$hasAlready) {
-            $builder->prependClientTransformer($prependedTransformer);
-        } else {
-            unset($prependedTransformer);
-        }
-
-        return !$hasAlready;
     }
 }
